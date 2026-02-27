@@ -17,8 +17,6 @@
 
 from unittest import mock
 
-import pkg_resources
-
 from tensorboard import default
 from tensorboard.plugins import base_plugin
 from tensorboard import test
@@ -30,35 +28,21 @@ class FakePlugin(base_plugin.TBPlugin):
     plugin_name = "fake"
 
 
-class FakeEntryPoint(pkg_resources.EntryPoint):
-    """EntryPoint class that fake loads FakePlugin."""
+class FakeEntryPoint:
+    """EntryPoint that fake loads FakePlugin."""
 
-    @classmethod
-    def create(cls):
-        """Creates an instance of FakeEntryPoint.
-
-        Returns:
-          instance of FakeEntryPoint
-        """
-        return cls("foo", "bar")
-
-    def resolve(self):
-        """Returns FakePlugin instead of resolving module.
-
-        Returns:
-          FakePlugin
-        """
+    def load(self):
         return FakePlugin
 
 
 class DefaultTest(test.TestCase):
-    @mock.patch.object(pkg_resources, "iter_entry_points")
-    def test_get_dynamic_plugin(self, mock_iter_entry_points):
-        mock_iter_entry_points.return_value = [FakeEntryPoint.create()]
+    @mock.patch("tensorboard.default.entry_points")
+    def test_get_dynamic_plugin(self, mock_entry_points):
+        mock_entry_points.return_value = [FakeEntryPoint()]
 
         actual_plugins = default.get_dynamic_plugins()
 
-        mock_iter_entry_points.assert_called_with("tensorboard_plugins")
+        mock_entry_points.assert_called_with(group="tensorboard_plugins")
         self.assertEqual(actual_plugins, [FakePlugin])
 
 
